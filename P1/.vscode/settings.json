@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "pmmintrin.h": "c",
+        "time.h": "c"
+    }
+}
