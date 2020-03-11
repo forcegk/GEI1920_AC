@@ -1,3 +1,6 @@
+// Alonso Rodriguez <alonso.rodriguez@udc.es>
+// Practica 1 Con uso de hadd
+
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
