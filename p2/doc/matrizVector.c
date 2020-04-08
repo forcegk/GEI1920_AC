@@ -8,7 +8,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <mpi.h>
+#include "mpi.h"
 
 /* Función que multiplica una matriz por un vector en la memoria local */
 void matrizVectorLocal(float alfa, float *A, int lda, float *x, float *y, int filas, int cols){

@@ -1,5 +1,5 @@
 #########################
-TARGET = matrizVector
+TARGET = main
 #########################
 
 DEBUG=-Wall -O0 -g
