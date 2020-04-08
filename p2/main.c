@@ -4,8 +4,9 @@
 
 int main(int argc, char *argv[]) {
 
-    int numprocs, rank, i, j, l, m, n, k, test;
+    int numprocs, rank, i, j, l, m, n, k, test, time;
     float alfa;
+    double t_exec;
 
     // Inicializamos MPI
     MPI_Init(&argc, &argv);
@@ -21,25 +22,27 @@ int main(int argc, char *argv[]) {
     // Parámetro 3 -> n
     // Parámetro 4 -> alfa
     // Parámetro 5 -> booleano que nos indica si se desea imprimir matrices y vectores de entrada y salida
+    // Parámetro 6 -> booleano que nos indica si se desea medir el tiempo
     if(!rank){
-        if(argc>5){
+        if(argc>6){
             m = atoi(argv[1]);
             k = atoi(argv[2]);
             n = atoi(argv[3]);
             alfa = atof(argv[4]);
             test = atoi(argv[5]);
+            time = atoi(argv[6]);
         }
         else{
-            printf("NUMERO DE PARAMETROS [argc=%d] INCORRECTO\n", argc);
+            fprintf(stderr, "NUMERO DE PARAMETROS [argc=%d] INCORRECTO\n", argc);
             MPI_Abort(MPI_COMM_WORLD, 1);
             return 0;
         }
 
         char arrow[] = "  <-- error";
-        printf("-> m=%d%s\n-> k=%d%s\n-> n=%d%s\n", m, m<=0?arrow:"", k, k<=0?arrow:"", n, n<=0?arrow:"");
+        fprintf(stderr, "-> m=%d%s\n-> k=%d%s\n-> n=%d%s\n", m, m<=0?arrow:"", k, k<=0?arrow:"", n, n<=0?arrow:"");
         
         if((m<=0) || (k<=0) || (n<=0)){
-            printf("TAMAÑO NO VALIDO!!\n");
+            fprintf(stderr, "TAMAÑO NO VALIDO!!\n");
             fflush(stdout);
             MPI_Abort(MPI_COMM_WORLD, 1);
             return 0;
@@ -150,6 +153,11 @@ int main(int argc, char *argv[]) {
     //  ¡¡¡¡¡¡¡INICIALIZAR LA ZONA A CEROS!!!!!!!
     float *C_partial = calloc(local_rows*n, sizeof(float));
 
+    if(time){
+        MPI_Barrier(MPI_COMM_WORLD);
+        t_exec = MPI_Wtime();
+    }
+
     MPI_Scatterv(A, send_countarray, send_displarray,
                  MPI_FLOAT, A_partial, local_send_count,
                  MPI_FLOAT, 0, MPI_COMM_WORLD);
@@ -167,6 +175,10 @@ int main(int argc, char *argv[]) {
     MPI_Gatherv(C_partial, local_recv_count, MPI_FLOAT,
                 C, recv_countarray, recv_displarray,
                 MPI_FLOAT, 0, MPI_COMM_WORLD);
+
+    if(time){
+        t_exec = MPI_Wtime() - t_exec;
+    }
 
 
     /* TEST POST CALCULO */
@@ -194,11 +206,16 @@ int main(int argc, char *argv[]) {
                 }
 
                 if(temp_err != C[i*n+j]){
+                    fprintf(stderr, "Error en posición [%d,%d]. Value=%f != %f=Expected\n", i, j, C[i*n+j], temp_err);
                     errores++;
                 }
             }
         }
-        printf("\nErrores: %d\n", errores);
+        fprintf(stderr, "\nErrores: %d\n", errores);
+
+        if(time){
+            fprintf(stderr, "\nTiempo de ejecución del proceso: %lf\n", t_exec);
+        }
     }
 
     // FREE ZONE //
