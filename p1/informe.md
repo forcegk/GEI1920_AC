@@ -8,9 +8,8 @@
     RAM: 7.60 GiB DDR3 @ 1600 MHz
 
 ### Metodología
-    Se han recogido los mejores tiempos de cada una de las mediciones, con
-    una excepción que comentaremos en las conclusiones, por la que también
-    recogemos los resultados de la primera medición.
+    Se han recogido los mejores tiempos de cada una de las mediciones, con una excepción que comentaremos
+    en las conclusiones, por la que también recogemos los resultados de la primera medición.
 
     Tamaños:
        - Pequeño  6000 x  5000
@@ -37,13 +36,11 @@
 
 
 ### Conclusiones
-      Como vemos, el compilador realiza un muy buen trabajo en la
-    auto-vectorización. Asimismo, el no usar instrucciones horizontales
-    no parece beneficiar nunca, excepto en un caso que me ha parecido bastante
-    curioso, y es que en la primera ejecución, de manera consistente, el
-    código que no emplea operaciones horizonales tiene un ligeramente mejor
-    desempeño que el que sí las utiliza.
-      Esto podría deberse a algún tipo de prefetch o comportamientos con la
-    caché, del procesador, o del sistema operativo.
-      Al repetir la prueba, desde la segunda y posteriores, la que emplea
-    operaciones horizonales suele mejorar el desempeño de la que no las emplea.
+      Como vemos, el compilador realiza un muy buen trabajo en la auto-vectorización.'
+      Asimismo, el no usar instrucciones horizontales no parece beneficiar nunca, excepto en un caso que
+    me ha parecido bastantecurioso, y es que en la primera ejecución, de manera consistente, el código que no
+    emplea operaciones horizonales tiene un ligeramente mejor desempeño que el que sí las utiliza.
+      Esto podría deberse a algún tipo de prefetch o comportamientos con la caché, del procesador, o del
+    sistema operativo.
+      Al repetir la prueba, desde la segunda y posteriores, la que emplea operaciones horizonales suele
+    mejorar el desempeño de la que no las emplea.
