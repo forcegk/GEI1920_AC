@@ -34,15 +34,18 @@ int main(int argc, char *argv[]) {
         }
         else{
             fprintf(stderr, "NUMERO DE PARAMETROS [argc=%d] INCORRECTO\n", argc);
+            fprintf(stderr, "Usage:\n"
+                            "  mpirun -np <num_procs> ./main m k n alfa test time\n\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
             return 0;
         }
 
         char arrow[] = "  <-- error";
         fprintf(stderr, "-> m=%d%s\n-> k=%d%s\n-> n=%d%s\n", m, m<=0?arrow:"", k, k<=0?arrow:"", n, n<=0?arrow:"");
+        fflush(stderr);
         
         if((m<=0) || (k<=0) || (n<=0)){
-            fprintf(stderr, "TAMAÑO NO VALIDO!!\n");
+            fprintf(stderr, "\nTAMAÑO NO VALIDO\n\n");
             fflush(stdout);
             MPI_Abort(MPI_COMM_WORLD, 1);
             return 0;
@@ -56,6 +59,7 @@ int main(int argc, char *argv[]) {
     MPI_Bcast(&k, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
     MPI_Bcast(&alfa, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&time, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 
     float *B = malloc(k*n*sizeof(float));
@@ -211,11 +215,14 @@ int main(int argc, char *argv[]) {
                 }
             }
         }
-        fprintf(stderr, "\nErrores: %d\n", errores);
+        fprintf(stderr, "\nErrores: %d\n\n", errores);
+    }
 
-        if(time){
-            fprintf(stderr, "\nTiempo de ejecución del proceso: %lf\n", t_exec);
-        }
+    // Para que no se superponga la impresión de las matrices con los tiempos
+    MPI_Barrier(MPI_COMM_WORLD);
+    if(time){
+        fprintf(stderr, "Tiempo de ejecución del proceso #%d: %lf\n", rank, t_exec);
+        fflush(stdout);
     }
 
     // FREE ZONE //
