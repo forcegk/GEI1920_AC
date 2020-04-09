@@ -1,3 +1,6 @@
+// Alonso Rodriguez <alonso.rodriguez@udc.es>
+// Practica 2
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
