@@ -36,7 +36,7 @@
 
 
 ### Conclusiones
-      Como vemos, el compilador realiza un muy buen trabajo en la auto-vectorización.'
+      Como vemos, el compilador realiza un muy buen trabajo en la auto-vectorización.
       Asimismo, el no usar instrucciones horizontales no parece beneficiar nunca, excepto en un caso que
     me ha parecido bastantecurioso, y es que en la primera ejecución, de manera consistente, el código que no
     emplea operaciones horizonales tiene un ligeramente mejor desempeño que el que sí las utiliza.
