@@ -3,7 +3,7 @@
 
 ### Datos
     NOMBRE:      Alonso Rodriguez Iglesias
-    EMAIL:       <alonso.rodriguez@udc.es>
+    EMAIL:       alonso.rodriguez@udc.es
     DNI:         49330318X
     COMPILACION: makefile (CC: mpicc)
     EJECUCION:   mpirun --oversubscribe m k n alfa test time
