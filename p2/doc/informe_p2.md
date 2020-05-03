@@ -16,31 +16,24 @@
     RAM:         7,6 GiB DDR3 @ 1600 MHz
 
 ### Trabajo realizado
-    La verdad es que con el archivo que se proporcionaba inicialmente, al no tener la soltura con MPI que he recuperado
-    ahora después de la realización de la práctica, decidí rehacerlo por completo.
-    Esto no significa que haya intentado hacer uno desde cero completamente diferente, sino que lo he hecho para que se
-    parezca al original, con el objetivo de recuperar esa soltura que no tenía al inicio, y que de haber comenzado
-    modificando el archivo directamente hubiese hecho que hubiese introducido una gran cantidad de errores.
-    Tras comentar esto, la arquitectura del programa es muy sencilla:
-        1- Leemos los parámetros, que se encuentran documentados en el propio código.
-        2- El proceso #0 distribuye los datos leidos por línea de comandos, inicializa las matrices y calcula el número de
-        elementos y filas que corresponden a cada uno de los procesos.
-        3- Cada proceso reserva la memoria local que necesite para realizar sus cálculos, así como el número de filas y
-        elementos que le tocan basado en su rank.
-        4- Cada proceso comienza su medición de tiempo
-        5- El proceso #0 distribuye las matrices (A se distribuye por filas de la forma más equitativa posible y B
-        completamente).
-        6- Cada proceso realiza su parte de las computaciones.
-        7- El proceso #0 recoge de vuelta los resultados de cada uno de los procesos.
-        8- Medimos el final de los tiempos de ejecución
-        9- Mostramos los tiempos de ejecución (comunicaciones y computaciones) por cada proceso y liberamos la memoria
-        reservada.
-    Si el parámetro test está a 1 se mostrarán las matrices A, B y C. Y si el parámetro time está a 0, no se mostrarán los
-    tiempos.
-     
-    Las matrices se imprimen por stdout, y el resto de mensajes por stderr, así podemos ejecutar comandos del estilo
-    mpirun -np 2 ./main m k n alfa test time > matrices.txt, y guardar los resultados a parte, obteniendo los tiempos y
-    los errores en la salida stderr de terminal.
+La verdad es que con el archivo que se proporcionaba inicialmente, al no tener la soltura con MPI que he recuperado ahora después de la realización de la práctica, decidí rehacerlo por completo.
+Esto no significa que haya intentado hacer uno desde cero completamente diferente, sino que lo he hecho para que se parezca al original, con el objetivo de recuperar esa soltura que no tenía al inicio, y que de haber comenzado modificando el archivo directamente hubiese hecho que hubiese introducido una gran cantidad de errores.
+Tras comentar esto, la arquitectura del programa es muy sencilla:
+    1- Leemos los parámetros, que se encuentran documentados en el propio código.
+    2- El proceso #0 distribuye los datos leidos por línea de comandos, inicializa las matrices y calcula el número de elementos y filas que corresponden a cada uno de los procesos.
+    3- Cada proceso reserva la memoria local que necesite para realizar sus cálculos, así como el número de filas y elementos que le tocan basado en su rank.
+    4- Cada proceso comienza su medición de tiempo
+    5- El proceso #0 distribuye las matrices (A se distribuye por filas de la forma más equitativa posible y B completamente).
+    6- Cada proceso realiza su parte de las computaciones.
+    7- El proceso #0 recoge de vuelta los resultados de cada uno de los procesos.
+    8- Medimos el final de los tiempos de ejecución
+    9- Mostramos los tiempos de ejecución (comunicaciones y computaciones) por cada proceso y liberamos la memoria reservada.
+Si el parámetro test está a 1 se mostrarán las matrices A, B y C. Y si el parámetro time está a 0, no se mostrarán los tiempos.
+ 
+Las matrices se imprimen por stdout, y el resto de mensajes por stderr, así podemos ejecutar comandos del estilo
+    
+    mpirun -np 2 ./main m k n alfa test time > matrices.txt
+y guardar los resultados a parte, obteniendo los tiempos y los errores en la salida stderr de terminal.
 
 ### Compilación
     [alonso@anarchy-alonso:AC/p2]$ make
