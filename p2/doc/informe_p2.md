@@ -34,7 +34,7 @@ Si el parámetro test está a 1 se mostrarán las matrices A, B y C. Y si el par
 
 Las matrices se imprimen por stdout, y el resto de mensajes por stderr, así podemos ejecutar comandos del estilo
 
-        mpirun -np 2 ./main m k n alfa test time > matrices.txt
+    mpirun -np 2 ./main m k n alfa test time > matrices.txt
 y guardar los resultados a parte, obteniendo los tiempos y los errores en la salida stderr de terminal.
 
 ### Compilación
