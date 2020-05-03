@@ -1,5 +1,17 @@
-// Alonso Rodriguez <alonso.rodriguez@udc.es>
-// Practica 2
+/**
+*   NOMBRE:      Alonso Rodriguez Iglesias
+*   EMAIL:       <alonso.rodriguez@udc.es>
+*   DNI:         49330318X
+*   COMPILACION: makefile (CC: mpicc)
+*   EJECUCION:   mpirun --oversubscribe m k n alfa test time
+*
+*   MPI:         openmpi 4.0.3-1 [https://www.archlinux.org/packages/extra/x86_64/openmpi/]
+*   ENTORNO:     Linux 5.6.9-1-ck-ivybridge #1 SMP PREEMPT x86_64 GNU/Linux
+*   DISTRO:      Arch Linux Rolling
+*
+*   CPU:         Intel(R) Core(TM) i5-3230M CPU @ 2.60GHz
+*   RAM:         7,6 GiB DDR3 @ 1600 MHz
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,7 +37,7 @@ int main(int argc, char *argv[]) {
     // Parámetro 3 -> n
     // Parámetro 4 -> alfa
     // Parámetro 5 -> booleano que nos indica si se desea imprimir matrices y vectores de entrada y salida
-    // Parámetro 6 -> booleano que nos indica si se desea medir el tiempo
+    // Parámetro 6 -> booleano que nos indica si se desea medir (e imprimir) el tiempo
     if(!rank){
         if(argc>6){
             m = atoi(argv[1]);
@@ -183,6 +195,7 @@ int main(int argc, char *argv[]) {
                 C, recv_countarray, recv_displarray,
                 MPI_FLOAT, 0, MPI_COMM_WORLD);
 
+    // Aquí recogemos la segunda medición del tiempo
     if(time){
         t_exec = MPI_Wtime() - t_exec;
     }
