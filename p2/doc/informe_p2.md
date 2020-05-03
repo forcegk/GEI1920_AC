@@ -16,7 +16,8 @@
     RAM:         7,6 GiB DDR3 @ 1600 MHz
 
 ### Trabajo realizado
-    La verdad es que con el archivo que se proporcionaba inicialmente, al no tener la soltura con MPI que he recuperado ahora después de la realización de la práctica, decidí rehacerlo por completo.
+    La verdad es que con el archivo que se proporcionaba inicialmente, al no tener la soltura con MPI que he recuperado
+    ahora después de la realización de la práctica, decidí rehacerlo por completo.
     Esto no significa que haya intentado hacer uno desde cero completamente diferente, sino que lo he hecho para que se
     parezca al original, con el objetivo de recuperar esa soltura que no tenía al inicio, y que de haber comenzado
     modificando el archivo directamente hubiese hecho que hubiese introducido una gran cantidad de errores.
