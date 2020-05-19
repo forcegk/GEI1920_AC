@@ -13,8 +13,11 @@
 *   RAM:         7,6 GiB DDR3 @ 1600 MHz
 */
 
+#define MODE_PACKED
+
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <mpi.h>
 #include <math.h>
 
@@ -26,6 +29,7 @@ int isPerfectSquare(long double x){
 int main(int argc, char *argv[]) {
 
     int numprocs, sqrtnumprocs, rank, i, j, l, m, n, k, test, debug, time;
+    int temp_int;
     float alfa;
     double t_exec;
 
@@ -99,19 +103,50 @@ int main(int argc, char *argv[]) {
 
     }
 
+    /*** INICIO BROADCAST DE PARÁMETROS ***/
+    #ifdef MODE_PACKED
+        #undef MODE_STRUCT
 
-    // ENVIAMOS LOS DATOS AL RESTO DE PROCESOS
-    MPI_Bcast(&m, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&k, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&alfa, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&time, 1, MPI_INT, 0, MPI_COMM_WORLD);
+        int buffer_size, posicion = 0;
+        MPI_Pack_size(4, MPI_INT, MPI_COMM_WORLD, &buffer_size);
+        MPI_Pack_size(1, MPI_FLOAT, MPI_COMM_WORLD, &temp_int);
+        buffer_size += temp_int;
 
+        uint8_t buffer[buffer_size];
+
+        if(!rank){
+            MPI_Pack(&m, 1, MPI_INT, buffer, buffer_size, &posicion, MPI_COMM_WORLD);
+            MPI_Pack(&k, 1, MPI_INT, buffer, buffer_size, &posicion, MPI_COMM_WORLD);
+            MPI_Pack(&n, 1, MPI_INT, buffer, buffer_size, &posicion, MPI_COMM_WORLD);
+            MPI_Pack(&alfa, 1, MPI_FLOAT, buffer, buffer_size, &posicion, MPI_COMM_WORLD);
+            MPI_Pack(&time, 1, MPI_INT, buffer, buffer_size, &posicion, MPI_COMM_WORLD);
+        }
+        MPI_Bcast(buffer, buffer_size, MPI_PACKED, 0, MPI_COMM_WORLD);
+        if(rank){
+            MPI_Unpack(buffer, buffer_size, &posicion, &m, 1, MPI_INT, MPI_COMM_WORLD);
+            MPI_Unpack(buffer, buffer_size, &posicion, &k, 1, MPI_INT, MPI_COMM_WORLD);
+            MPI_Unpack(buffer, buffer_size, &posicion, &n, 1, MPI_INT, MPI_COMM_WORLD);
+            MPI_Unpack(buffer, buffer_size, &posicion, &alfa, 1, MPI_FLOAT, MPI_COMM_WORLD);
+            MPI_Unpack(buffer, buffer_size, &posicion, &time, 1, MPI_INT, MPI_COMM_WORLD);
+        }
+    #endif
+    #ifdef MODE_STRUCT
+        #undef MODE_PACKED
+    
+    #endif // MODE_STRUCT
+    /*** FIN BROADCAST DE PARÁMETROS ***/
 
     float *B = malloc(k*n*sizeof(float));
     float *A, *C;
 
+    //float      *A,      *B,      *C;
+    //float *localA, *localB, *localC;
+    //float   *bufA,   *bufB;
+
     if(!rank){
+        /** TODO PROCESOS Y DEMÁS**/
+
+
         // Proceso 0 inicializa las matrices A, B y C
         A = malloc(m*k*sizeof(float));
         C = malloc(n*m*sizeof(float));
