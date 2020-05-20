@@ -262,7 +262,6 @@ int main(int argc, char *argv[]) {
         MPI_Cart_sub(comm_malla, comm_columna_freedims, &comm_columna);
     #elif defined COMM_SPLIT
         #undef COMM_SUBTOPO
-        // TODO MPI_Comm_Split con las coordenadas
         int q, p;
         p = rank/sqrtnumprocs;
         q = rank%sqrtnumprocs;
