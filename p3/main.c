@@ -13,7 +13,11 @@
 *   RAM:         7,6 GiB DDR3 @ 1600 MHz
 */
 
-#define MODE_PACKED
+#define BCAST_PACKED
+//#define BCAST_STRUCT
+
+#define COMM_SUBTOPO
+//#define COMM_SPLIT
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -64,7 +68,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "Usage:\n"
                             "  mpirun -np <num_procs> ./main m k n alfa test debug time\n\n");
             MPI_Abort(MPI_COMM_WORLD, 1);
-            return 0;
+            return 1;
         }
 
         // Testear si soportamos el número de procesos
@@ -72,7 +76,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "\nNO SOPORTADO: NUMERO DE PROCESOS NO ES CUADRADO PERFECTO\n\n");
             fflush(stdout);
             MPI_Abort(MPI_COMM_WORLD, 1);
-            return 0;
+            return 1;
         }
 
         // Mostrar m k n y posibles errores
@@ -90,7 +94,7 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "\nTAMAÑO NO VALIDO\n\n");
             fflush(stdout);
             MPI_Abort(MPI_COMM_WORLD, 1);
-            return 0;
+            return 1;
         }
 
         // Testeamos si la matriz es divisible equitativamente
@@ -98,14 +102,14 @@ int main(int argc, char *argv[]) {
             fprintf(stderr, "\nNO SOPORTADO: TAMAÑO NO MULTIPLO DE %d\n\n", sqrtnumprocs);
             fflush(stdout);
             MPI_Abort(MPI_COMM_WORLD, 1);
-            return 0;
+            return 1;
         }
 
     }
 
     /*** INICIO BROADCAST DE PARÁMETROS ***/
-    #ifdef MODE_PACKED
-        #undef MODE_STRUCT
+    #if defined BCAST_PACKED
+        #undef BCAST_STRUCT
 
         int buffer_size, posicion = 0;
         MPI_Pack_size(4, MPI_INT, MPI_COMM_WORLD, &buffer_size);
@@ -129,26 +133,28 @@ int main(int argc, char *argv[]) {
             MPI_Unpack(buffer, buffer_size, &posicion, &alfa, 1, MPI_FLOAT, MPI_COMM_WORLD);
             MPI_Unpack(buffer, buffer_size, &posicion, &time, 1, MPI_INT, MPI_COMM_WORLD);
         }
-    #endif
-    #ifdef MODE_STRUCT
-        #undef MODE_PACKED
+    #elif defined BCAST_STRUCT
+        #undef BCAST_PACKED
+        // TODO MPI_Type_Struct y hacer Bcast de él
     
-    #endif // MODE_STRUCT
+    #else
+        if(!rank){
+            fprintf(stderr, "\n\nNo hay mecanismo de difusión de parámetros definido!\n"
+                            "Quizás olvidaste #define BCAST_PACKED o #define BCAST_STRUCT\n\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+            return 1;
+        }
+    #endif
     /*** FIN BROADCAST DE PARÁMETROS ***/
 
-    float *B = malloc(k*n*sizeof(float));
-    float *A, *C;
-
-    //float      *A,      *B,      *C;
-    //float *localA, *localB, *localC;
-    //float   *bufA,   *bufB;
+    float      *A,      *B,      *C;
+    float *localA, *localB, *localC;
+    float   *bufA,   *bufB;
 
     if(!rank){
-        /** TODO PROCESOS Y DEMÁS**/
-
-
         // Proceso 0 inicializa las matrices A, B y C
         A = malloc(m*k*sizeof(float));
+        B = malloc(k*n*sizeof(float));
         C = malloc(n*m*sizeof(float));
 
         // Valores de A (m x k)
@@ -184,6 +190,61 @@ int main(int argc, char *argv[]) {
             printf("\n");
         }
     }
+
+
+    /*** INICIO DEFINICIÓN DE COMUNICADORES ***/
+    MPI_Comm comm_malla;
+    MPI_Comm comm_fila;
+    MPI_Comm comm_columna;
+
+    int ndims = 2;
+    const int dims[] = {sqrtnumprocs, sqrtnumprocs}; // aquí podríamos usar  MPI_Dims_create
+    const int periods[] = {0, 0};                    // pero por comodidad voy a hacer así.
+    MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &comm_malla);
+
+    #if defined COMM_SUBTOPO
+        #undef COMM_SPLIT
+        
+        const int comm_fila_freedims[] = {0, 1};
+        const int comm_columna_freedims[] = {1, 0};
+        MPI_Cart_sub(comm_malla, comm_fila_freedims, &comm_fila);
+        MPI_Cart_sub(comm_malla, comm_columna_freedims, &comm_columna);
+
+    #elif defined COMM_SPLIT
+        #undef COMM_SUBTOPO
+        
+        // TODO MPI_Comm_Split con las coordenadas
+    #else
+        if(!rank){
+            fprintf(stderr, "\n\nNo hay mecanismo de creación de topología de filas y columnas definido!\n"
+                            "Quizás olvidaste #define COMM_SUBTOPO o #define COMM_SPLIT\n\n");
+            MPI_Abort(MPI_COMM_WORLD, 1);
+            return 1;
+        }
+    #endif
+
+    /*** FIN DEFINICIÓN DE COMUNICADORES ***/
+
+    /*** INICIO BROADCAST DE MATRICES ***/
+    int mpp = m/sqrtnumprocs; // mpp = m per process
+    int kpp = k/sqrtnumprocs; // kpp = k per process
+    int npp = n/sqrtnumprocs; // npp = n per process
+
+    int comm_malla_coords[ndims];
+
+    MPI_Cart_get(comm_malla, ndims, dims, periods, comm_malla_coords);
+
+    fprintf(stderr, "Proceso #%d => [%d, %d]\n", rank, comm_malla_coords[0], comm_malla_coords[1]);
+    
+    /*if(!rank){
+        printf("Llegué aquí (el debug de calidad)\n");
+        fflush(stdout);
+        MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);*/
+    /*** FIN BROADCAST DE MATRICES ***/
+
+
 
     // Broadcast de B al resto de los procesos
     MPI_Bcast(B, k*n, MPI_FLOAT, 0, MPI_COMM_WORLD);
@@ -310,16 +371,26 @@ int main(int argc, char *argv[]) {
         fflush(stdout);
     }
 
-    // FREE ZONE //
+    // WELCOME TO THE FREE ZONE //
 
     // Global
-    free(B);
     free(A_partial);
     free(C_partial);
 
+    // Free MPI_Type and MPI_Comm
+    MPI_Comm_free(&comm_malla);
+    MPI_Comm_free(&comm_fila);
+    MPI_Comm_free(&comm_columna);
+    #if defined COMM_SUBTOPO
+    #elif defined COMM_SPLIT
+    #endif
+
+    //Free rank 0 only
     if(!rank){
         free(A);
+        free(B);
         free(C);
+
         free(rowarray);
         free(send_countarray);
         free(recv_countarray);
