@@ -19,9 +19,14 @@
 #define COMM_SUBTOPO
 //#define COMM_SPLIT
 
+//#define DO_SORT_OUTPUT
+
+//#define DEBUG
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <mpi.h>
 #include <math.h>
 
@@ -32,7 +37,7 @@ int isPerfectSquare(long double x){
 
 int main(int argc, char *argv[]) {
 
-    int numprocs, sqrtnumprocs, rank, i, j, l, m, n, k, test, debug, time;
+    int numprocs, sqrtnumprocs, rank, comm_fila_rank, comm_columna_rank, i, j, l, m, n, k, test, debug, time;
     int temp_int;
     float alfa;
     double t_exec;
@@ -136,7 +141,50 @@ int main(int argc, char *argv[]) {
     #elif defined BCAST_STRUCT
         #undef BCAST_PACKED
         // TODO MPI_Type_Struct y hacer Bcast de él
-    
+        typedef struct _params {
+            int m, k, n, time;
+            float alfa;
+        } params;
+
+        params ps;
+
+        int lengths[] = {4, 1};
+        MPI_Aint offsets[2];
+        MPI_Datatype oldtypes[] = {MPI_INT, MPI_FLOAT};
+
+        MPI_Get_address(&(ps.m), &(offsets[0]));
+        MPI_Get_address(&(ps.alfa), &(offsets[1]));
+
+        offsets[1] = offsets[1] - offsets[0];
+        offsets[0] = 0;
+
+        MPI_Datatype type_params;
+        MPI_Type_create_struct(2, lengths, offsets, oldtypes, &type_params);
+        MPI_Type_commit(&type_params);
+
+        // Escribimos los valores a la struct
+        if(!rank){
+            ps.m = m;
+            ps.k = k;
+            ps.n = n;
+            ps.time = time;
+            ps.alfa = alfa;
+        }
+
+        // Le hacemos broadcast
+        MPI_Bcast(&ps, 1, type_params, 0, MPI_COMM_WORLD);
+
+        // Leemos los valores en el resto de procesos
+        if(rank){
+            m = ps.m;
+            k = ps.k;
+            n = ps.n;
+            time = ps.time;
+            alfa = ps.alfa;
+        }
+
+        // Ya liberamos aquí el tipo, ya que no lo vamos a volver a usar
+        MPI_Type_free(&type_params);
     #else
         if(!rank){
             fprintf(stderr, "\n\nNo hay mecanismo de difusión de parámetros definido!\n"
@@ -147,6 +195,7 @@ int main(int argc, char *argv[]) {
     #endif
     /*** FIN BROADCAST DE PARÁMETROS ***/
 
+    /*** INICIO INICIALIZACION DE MATRICES ***/
     float      *A,      *B,      *C;
     float *localA, *localB, *localC;
     float   *bufA,   *bufB;
@@ -190,30 +239,37 @@ int main(int argc, char *argv[]) {
             printf("\n");
         }
     }
+    /*** FIN INICIALIZACION DE MATRICES ***/
 
 
     /*** INICIO DEFINICIÓN DE COMUNICADORES ***/
-    MPI_Comm comm_malla;
     MPI_Comm comm_fila;
     MPI_Comm comm_columna;
 
-    int ndims = 2;
-    const int dims[] = {sqrtnumprocs, sqrtnumprocs}; // aquí podríamos usar  MPI_Dims_create
-    const int periods[] = {0, 0};                    // pero por comodidad voy a hacer así.
-    MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &comm_malla);
-
     #if defined COMM_SUBTOPO
         #undef COMM_SPLIT
+        MPI_Comm comm_malla;
         
-        const int comm_fila_freedims[] = {0, 1};
-        const int comm_columna_freedims[] = {1, 0};
+        int ndims = 2;
+        int dims[] = {sqrtnumprocs, sqrtnumprocs}; // aquí podríamos usar  MPI_Dims_create
+        int periods[] = {0, 0};                    // pero por comodidad voy a hacer así.
+        
+        MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periods, 0, &comm_malla);
+
+        int comm_fila_freedims[] = {0, 1};
+        int comm_columna_freedims[] = {1, 0};
         MPI_Cart_sub(comm_malla, comm_fila_freedims, &comm_fila);
         MPI_Cart_sub(comm_malla, comm_columna_freedims, &comm_columna);
-
     #elif defined COMM_SPLIT
         #undef COMM_SUBTOPO
-        
         // TODO MPI_Comm_Split con las coordenadas
+        int q, p;
+        p = rank/sqrtnumprocs;
+        q = rank%sqrtnumprocs;
+
+        MPI_Comm_split(MPI_COMM_WORLD, p, q, &comm_fila);
+        MPI_Comm_split(MPI_COMM_WORLD, q, p, &comm_columna);
+
     #else
         if(!rank){
             fprintf(stderr, "\n\nNo hay mecanismo de creación de topología de filas y columnas definido!\n"
@@ -223,6 +279,10 @@ int main(int argc, char *argv[]) {
         }
     #endif
 
+    //guardamos los ranks en fila y columna
+    MPI_Comm_rank(comm_columna, &comm_columna_rank);
+    MPI_Comm_rank(comm_fila, &comm_fila_rank);
+
     /*** FIN DEFINICIÓN DE COMUNICADORES ***/
 
     /*** INICIO BROADCAST DE MATRICES ***/
@@ -230,106 +290,186 @@ int main(int argc, char *argv[]) {
     int kpp = k/sqrtnumprocs; // kpp = k per process
     int npp = n/sqrtnumprocs; // npp = n per process
 
-    int comm_malla_coords[ndims];
+    #ifdef DEBUG
+        #if defined COMM_SUBTOPO
+        int comm_malla_coords[ndims];
+        MPI_Cart_get(comm_malla, ndims, dims, periods, comm_malla_coords);
+        fprintf(stderr, "Proceso #%d => [%d,%d]\n", rank, comm_malla_coords[0], comm_malla_coords[1]);
+        #endif
+    #endif
 
-    MPI_Cart_get(comm_malla, ndims, dims, periods, comm_malla_coords);
-
-    fprintf(stderr, "Proceso #%d => [%d, %d]\n", rank, comm_malla_coords[0], comm_malla_coords[1]);
-    
-    /*if(!rank){
-        printf("Llegué aquí (el debug de calidad)\n");
-        fflush(stdout);
-        MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-    MPI_Barrier(MPI_COMM_WORLD);*/
-    /*** FIN BROADCAST DE MATRICES ***/
-
-
-
-    // Broadcast de B al resto de los procesos
-    MPI_Bcast(B, k*n, MPI_FLOAT, 0, MPI_COMM_WORLD);
-
-    int *rowarray, *send_countarray, *recv_countarray,
-        *send_displarray, *recv_displarray, local_rows, local_send_count, local_recv_count;
-
-    // Calculamos en proceso 0 las filas que corresponden a cada proceso
+    MPI_Datatype type_submatrix_A;
+    MPI_Datatype type_submatrix_B;
+    MPI_Datatype type_submatrix_C;
     if(!rank){
-        int rows_over_numprocs = m/numprocs; //para evitar repetir esta operación
-        int resto = m%numprocs;
-
-        rowarray        = malloc(sizeof(int)*numprocs);
-        send_countarray = malloc(sizeof(int)*numprocs);
-        recv_countarray = malloc(sizeof(int)*numprocs);
-        send_displarray = malloc(sizeof(int)*numprocs);
-        recv_displarray = malloc(sizeof(int)*numprocs);
-
-        for(i=0; i<numprocs; i++){
-            // Suma rows_over_numprocs mas el 1 si el resto es mayor que 0
-            rowarray[i] = rows_over_numprocs + (resto-->0);
-
-            // Calcular el numero de items entre todas las filas
-            send_countarray[i] = rowarray[i] * k;
-            recv_countarray[i] = rowarray[i] * n;
-        }
-
-        // El desplazamiento base es 0
-        send_displarray[0] = 0;
-        recv_displarray[0] = 0;
-        for(i=1; i<numprocs; i++){
-            //Calculamos el desplazamiento relativo a base en cada proceso
-            send_displarray[i] = send_displarray[i-1] + send_countarray[i-1];
-            recv_displarray[i] = recv_displarray[i-1] + recv_countarray[i-1];
-        }
-
-
-        local_rows  = rowarray[0];
-        local_send_count = send_countarray[0];
-        local_recv_count = recv_countarray[0];
-
-    } else {
-        local_rows  = (m/numprocs) + (m%numprocs>rank);
-        local_send_count = local_rows * k;
-        local_recv_count = local_rows * n;
+        MPI_Type_vector(mpp, kpp, k, MPI_FLOAT, &type_submatrix_A);
+        MPI_Type_vector(kpp, npp, n, MPI_FLOAT, &type_submatrix_B);
+        MPI_Type_vector(mpp, npp, n, MPI_FLOAT, &type_submatrix_C);
+        MPI_Type_commit(&type_submatrix_A);
+        MPI_Type_commit(&type_submatrix_B);
+        MPI_Type_commit(&type_submatrix_C);
     }
 
-    // Se ejecuta en todos los procesadores
-    float *A_partial = malloc(local_rows*k*sizeof(float));
+    // Reservamos espacio para las submatrices
+    localA = malloc(mpp*kpp*sizeof(float));
+    localB = malloc(kpp*npp*sizeof(float));
+    localC = calloc(npp*mpp,sizeof(float)); // inicializamos a 0
 
-    // OJO MUY IMPORTANTE, HE PERDIDO UNA HORA Y MEDIA DE MI VIDA POR ESTO
-    //  ¡¡¡¡¡¡¡INICIALIZAR LA ZONA A CEROS!!!!!!!
-    float *C_partial = calloc(local_rows*n, sizeof(float));
+    // y tambien para las matrices buffer
+    bufA = malloc(mpp*kpp*sizeof(float));
+    bufB = malloc(kpp*npp*sizeof(float));
 
+    /** MEDICIÓN DEL TIEMPO INICIAL **/
     if(time){
         MPI_Barrier(MPI_COMM_WORLD);
         t_exec = MPI_Wtime();
     }
+    /*********************************/
 
-    MPI_Scatterv(A, send_countarray, send_displarray,
-                 MPI_FLOAT, A_partial, local_send_count,
-                 MPI_FLOAT, 0, MPI_COMM_WORLD);
-
-    // Calculamos los resultados parciales
-    for(i=0; i<local_rows; i++){
-        for(j=0; j<n; j++){
-            for(l=0; l<k; l++){
-                C_partial[i*n+j] += alfa*A_partial[i*k+l]*B[l*n+j];
-            }
+    // Enviamos las matrices
+    if(!rank){
+        for(i = 1; i<numprocs; i++){
+            MPI_Send(A+i*kpp+(i/sqrtnumprocs)*(mpp-1)*k, 1, type_submatrix_A, i, 0, MPI_COMM_WORLD);
+                //   A                          -> posición inicial
+                //   i*kpp                      -> padding en la misma fila
+                //   (i/sqrtnumprocs)*(mpp-1)*k -> padding entre filas de bloques
+            MPI_Send(B+i*npp+(i/sqrtnumprocs)*(kpp-1)*n, 1, type_submatrix_B, i, 0, MPI_COMM_WORLD);
         }
+
+        // Y copiar su zona desde A a localA  ::  TODO IMPROVE MEMORY USAGE BY USING CUSTOM PADDING ON ACCESS FOR RANK 0
+        for(i = 0; i<mpp; i++){
+            memcpy(localA+i*kpp, A+i*k, kpp*sizeof(float));
+        }
+        // Igual con localB
+        for(i = 0; i<kpp; i++){
+            memcpy(localB+i*npp, B+i*n, npp*sizeof(float));
+        }
+    }else{
+        // receive
+        MPI_Recv(localA, mpp*kpp, MPI_FLOAT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        MPI_Recv(localB, kpp*npp, MPI_FLOAT, MPI_ANY_SOURCE, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
-    // Y recuperamos
-    MPI_Gatherv(C_partial, local_recv_count, MPI_FLOAT,
-                C, recv_countarray, recv_displarray,
-                MPI_FLOAT, 0, MPI_COMM_WORLD);
+    #ifdef DEBUG
+    for(temp_int = 0; temp_int<numprocs; temp_int++){
+        if(rank == temp_int){
+            printf("\n#%d :: SubMatriz A es...\n", temp_int);
+                for(i=0; i<mpp; i++){
+                    for(j=0; j<kpp; j++){
+                        printf("%f ", localA[i*kpp+j]);
+                    }
+                    printf("\n");
+                }
+                fflush(stdout);
+            printf("\n#%d :: SubMatriz B es...\n", temp_int);
+                for(i=0; i<kpp; i++){
+                    for(j=0; j<npp; j++){
+                        printf("%f ", localB[i*npp+j]);
+                    }
+                    printf("\n");
+                }
+                fflush(stdout);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    #endif
+
+    /*** FIN BROADCAST DE MATRICES ***/
+
+
+    /*** INICIO ALGORITMO ***/
+
+    for(temp_int = 0; temp_int<sqrtnumprocs; temp_int++){
+
+        if(comm_fila_rank == temp_int){
+            // Copiamos el localA a bufA
+            memcpy(bufA, localA, mpp*kpp*sizeof(float));
+        }
+        if(comm_columna_rank == temp_int){
+            // Idem para bufB
+            memcpy(bufB, localB, kpp*npp*sizeof(float));
+        }
+
+        // Difusión
+        MPI_Bcast(bufA, mpp*kpp, MPI_FLOAT, temp_int, comm_fila);
+        MPI_Bcast(bufB, kpp*npp, MPI_FLOAT, temp_int, comm_columna);
+
+        // Calculamos los resultados en localC
+        // IMPORTANTE C TIENE QUE ESTAR INICIALIZADA A CEROS
+        for(i=0; i<mpp; i++){
+            for(j=0; j<npp; j++){
+                for(l=0; l<kpp; l++){
+                    localC[i*npp+j] += alfa*bufA[i*kpp+l]*bufB[l*npp+j];
+                }
+            }
+        }
+        
+       
+        #ifdef DEBUG
+        MPI_Barrier(MPI_COMM_WORLD);
+        for(int asdf = 0; asdf<numprocs; asdf++){
+            if(rank == asdf){
+                printf("\nIt.%d, #%d :: bufA es...\n", temp_int, asdf);
+                    for(i=0; i<mpp; i++){
+                        for(j=0; j<kpp; j++){
+                            printf("%f ", bufA[i*kpp+j]);
+                        }
+                        printf("\n");
+                    }
+                    fflush(stdout);
+                printf("\nIt.%d, #%d :: bufB es...\n", temp_int, asdf);
+                    for(i=0; i<kpp; i++){
+                        for(j=0; j<npp; j++){
+                            printf("%f ", bufB[i*npp+j]);
+                        }
+                        printf("\n");
+                    }
+                    fflush(stdout);
+            }
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+        #endif
+
+    }
+
+    #ifdef DEBUG
+    MPI_Barrier(MPI_COMM_WORLD);
+    for(int asdf = 0; asdf<numprocs; asdf++){
+        if(rank == asdf){
+            printf("\nIt.%d, #%d :: SubMatriz C es...\n", temp_int, asdf);
+                for(i=0; i<mpp; i++){
+                    for(j=0; j<npp; j++){
+                        printf("%f ", localC[i*npp+j]);
+                    }
+                    printf("\n");
+                }
+                fflush(stdout);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+    #endif
+
+    // Y recogemos y combiamos las matrices
+    if(!rank){
+        // Y copiar su zona desde localC a C
+        for(i = 0; i<mpp; i++){
+            memcpy(C+i*n, localC+i*npp, npp*sizeof(float));
+        }
+
+        for(i = 1; i<numprocs; i++){
+            // recibimos y colocamos en su sitio
+            MPI_Recv(C+i*npp+(i/sqrtnumprocs)*(mpp-1)*n, 1, type_submatrix_C, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+        }
+    }else{
+        MPI_Send(localC, mpp*npp, MPI_FLOAT, 0, 0, MPI_COMM_WORLD);
+    }
 
     // Aquí recogemos la segunda medición del tiempo
     if(time){
         t_exec = MPI_Wtime() - t_exec;
     }
 
-
-    /* TEST POST CALCULO */
-
+    /*** TEST POST CALCULO ***/
     if(!rank){
         if(debug){
             printf("\nMatriz C es...\n");
@@ -339,6 +479,7 @@ int main(int argc, char *argv[]) {
                 }
                 printf("\n");
             }
+            fflush(stdout);
         }
 
         printf("\n");
@@ -365,23 +506,47 @@ int main(int argc, char *argv[]) {
     }
 
     // Para que no se superponga la impresión de las matrices con los tiempos
-    MPI_Barrier(MPI_COMM_WORLD);
     if(time){
-        fprintf(stderr, "Tiempo de ejecución del proceso #%d: %lf\n", rank, t_exec);
-        fflush(stdout);
+        #ifdef DO_SORT_OUTPUT
+        for(i=0; i<numprocs; i++){
+        #endif
+            MPI_Barrier(MPI_COMM_WORLD);
+
+            #ifdef DO_SORT_OUTPUT
+            if(rank == i){
+            #endif
+                fprintf(stderr, "Tiempo de ejecución del proceso #%d: %lf\n", rank, t_exec);
+                fflush(stdout);
+            #ifdef DO_SORT_OUTPUT  
+            }    
+        }
+        #endif
     }
+
+    /*** FIN TEST ***/
 
     // WELCOME TO THE FREE ZONE //
 
     // Global
-    free(A_partial);
-    free(C_partial);
+    free(localA);
+    free(localB);
+    free(localC);
+    free(bufA);
+    free(bufB);
 
     // Free MPI_Type and MPI_Comm
-    MPI_Comm_free(&comm_malla);
     MPI_Comm_free(&comm_fila);
     MPI_Comm_free(&comm_columna);
+
+    #if defined BCAST_PACKED
+    #elif defined BCAST_STRUCT
+    // Mejor lo liberamos tras usarlo, así no lo llevamos hasta
+    //  el final del programa
+    // MPI_Type_free(&type_params);
+    #endif
+    
     #if defined COMM_SUBTOPO
+    MPI_Comm_free(&comm_malla);
     #elif defined COMM_SPLIT
     #endif
 
@@ -391,11 +556,9 @@ int main(int argc, char *argv[]) {
         free(B);
         free(C);
 
-        free(rowarray);
-        free(send_countarray);
-        free(recv_countarray);
-        free(send_displarray);
-        free(recv_displarray);
+        MPI_Type_free(&type_submatrix_A);
+        MPI_Type_free(&type_submatrix_B);
+        MPI_Type_free(&type_submatrix_C);
     }
 
     MPI_Finalize();
