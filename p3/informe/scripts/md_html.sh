@@ -12,5 +12,5 @@ cd markdown-to-html-github-style
 npm install
 cp README.html ../../informe_p3.html
 cd ../..
-sed -i 's/<ed>/_/g' informe_p3.html
-sed -i 's/</ed>/_/g' informe_p3.html
+sed -i 's/<em>/_/g' informe_p3.html
+sed -i 's/<\/em>/_/g' informe_p3.html
