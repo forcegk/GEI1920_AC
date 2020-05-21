@@ -1,0 +1,4 @@
+[submodule "p3/informe/scripts/markdown-to-html-github-style"]
+	path = p3/informe/scripts/markdown-to-html-github-style
+	url = https://github.com/KrauseFx/markdown-to-html-github-style.git
+	branch = master
