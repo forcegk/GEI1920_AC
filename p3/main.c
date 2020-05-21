@@ -140,7 +140,6 @@ int main(int argc, char *argv[]) {
         }
     #elif defined BCAST_STRUCT
         #undef BCAST_PACKED
-        // TODO MPI_Type_Struct y hacer Bcast de él
         typedef struct _params {
             int m, k, n, time;
             float alfa;
@@ -294,6 +293,8 @@ int main(int argc, char *argv[]) {
         int comm_malla_coords[ndims];
         MPI_Cart_get(comm_malla, ndims, dims, periods, comm_malla_coords);
         fprintf(stderr, "Proceso #%d => [%d,%d]\n", rank, comm_malla_coords[0], comm_malla_coords[1]);
+        #elif defined COMM_SPLIT
+        fprintf(stderr, "Proceso #%d => [%d,%d]\n", rank, p, q);
         #endif
     #endif
 
@@ -335,7 +336,7 @@ int main(int argc, char *argv[]) {
             MPI_Send(B+i*npp+(i/sqrtnumprocs)*(kpp-1)*n, 1, type_submatrix_B, i, 0, MPI_COMM_WORLD);
         }
 
-        // Y copiar su zona desde A a localA  ::  TODO IMPROVE MEMORY USAGE BY USING CUSTOM PADDING ON ACCESS FOR RANK 0
+        // Y copiar su zona desde A a localA
         for(i = 0; i<mpp; i++){
             memcpy(localA+i*kpp, A+i*k, kpp*sizeof(float));
         }
