@@ -66,6 +66,13 @@ Podemos alterar el funcionamiento de dos apartados importantes de la práctica:
 | BCAST_PACKED | La difusión de parámetros se realiza mediante una serie de MPI_Pack's en el proceso #0, y se desempaqueta en el resto con los MPI_Unpack's correspondientes |
 | BCAST_STRUCT | La difusión de parámetros se realiza mediante la definición de un tipo struct de MPI, se rellenan los campos de la struct en el proceso #0, se difunden al resto de procesos, donde se asignan los valores de las variables locales a los que trae rellenados la struct |
 
+* Definición de comunicadores fila y columna
+
+|   \#define   | Descripción |
+|--------------|-------------|
+| COMM_SUBTOPO | Se crea un comunicador cartesiano entre todos los procesos, y sobre él se definen los comunicadores fila y columna mediante subtopologías |
+|  COMM_SPLIT  | Se crean los comunicadores fila y columna en base al rank con MPI_Comm_split |
+
 ### Compilación
     [alonso@anarchy-alonso:AC/p3]$ make
     mpicc -Wall -g   -c -o main.o main.c
