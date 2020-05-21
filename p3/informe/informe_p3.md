@@ -15,30 +15,47 @@
     CPU:         Intel(R) Core(TM) i5-3230M CPU @ 2.60GHz
     RAM:         7,6 GiB DDR3 @ 1600 MHz
 
-### Trabajo realizado
+### Cambios realizados
 Esta práctica se apoya en la base de la anterior para implementar el algoritmo SUMMA.
-Cambios con respecto a la práctica anterior:
+Con respecto a la práctica anterior los cambios son los siguientes:
 1. Ahora contamos con el parámetro debug, que nos permite indicar al programa si queremos mostrar las matrices A, B y C. Esta función antes la desempeñaba el parámetro test, que ahora ha pasado a tener un nombre con más sentido, y nos permite activar o desactivar si se realiza un test con respecto a la versión single-thread de la matriz C, ya que dependiendo del tamaño de la matriz, podía llevar una cantidad importante de tiempo.
 2. Cambios generales en la estructura del programa, especialmente en la difusión de parámetros, matrices, y algoritmo empleado, que se exponen a continuación.
 
+### Funcionamiento de la práctica
 El funcionamiento de la práctica es el siguiente:
-
 1. Leemos los parámetros, que se encuentran documentados en el propio código.
-2. El proceso #0 distribuye los datos leidos por línea de comandos, inicializa las matrices y calcula el número de elementos y filas que corresponden a cada uno de los procesos.
-3. Cada proceso reserva la memoria local que necesite para realizar sus cálculos, así como el número de filas y elementos que le tocan basado en su rank.
-4. Cada proceso comienza su medición de tiempo
-5. El proceso #0 distribuye las matrices (A se distribuye por filas de la forma más equitativa posible y B completamente).
-6. Cada proceso realiza su parte de las computaciones.
-7. El proceso #0 recoge de vuelta los resultados de cada uno de los procesos.
-8. Medimos el final de los tiempos de ejecución
-9. Mostramos los tiempos de ejecución (comunicaciones y computaciones) por cada proceso y liberamos la memoria reservada.
-
-Si el parámetro test está a 1 se mostrarán las matrices A, B y C. Y si el parámetro time está a 0, no se mostrarán los tiempos.
+2. Verificamos que los parámetros son válidos. En caso de no serlo, abortamos el programa y mostramos un mensaje de error.
+3. El proceso #0 distribuye los datos leidos por línea de comandos.
+4. El proceso #0 inicializa las matrices.
+5. El proceso #0 define los comunicadores fila y columna.
+6. Cada proceso calcula mpp, kpp y npp (*pp = * por proceso // * per process) y reserva memoria para localA, localB, y localC, así como para bufA y bufB.
+7. Cada proceso comienza su medición de tiempo.
+8. El proceso #0 envía las submatrices correspondientes a cada proceso haciendo uso de un tipo vector de MPI, y copia su parte en local, sin hacerse un send a si mismo.
+9. Se realiza el algoritmo. Para ello las difusiones se realizan empleando únicamente comunicadores fila y columna.
+10. El proceso #0 recoge de vuelta los resultados de cada uno de los procesos.
+11. Medimos el final de los tiempos de ejecución.
+12. Si el flag test está a 1, comprobamos que el resultado de la multiplicación sea correcto.
+13. Mostramos los tiempos de ejecución (comunicaciones y computaciones) por cada proceso.
+14. Liberamos la memoria, tipos, comunicadores, etc reservados, restantes.
 
 Las matrices se imprimen por stdout, y el resto de mensajes por stderr, así podemos ejecutar comandos del estilo
 
-    mpirun -np 2 ./main m k n alfa test time > matrices.txt
+    mpirun -np 4 ./main m k n alfa test debug time > matrices.txt
 y guardar los resultados a parte, obteniendo los tiempos y los errores en la salida stderr de terminal.
+Para que se imprima alguna matriz a matrices.txt, debug tiene que valer 1.
+
+### Parámetros
+| Parámetro | Descripción |
+|:---------:|-------------|
+| m         | Valor m de la matriz |
+| k         | Valor k de la matriz |
+| n         | Valor n de la matriz |
+| alfa      | Factor de escalado alfa |
+| test      | Indica si queremos comprobar errores en la matriz de resultado |
+| debug     | Indica si queremos mostrar las matrices por stdout |
+| time      | Indica si queremos imprimir los tiempos de cada proceso |
+
+### Alterar el funcionamiento con \#define
 
 ### Compilación
     [alonso@anarchy-alonso:AC/p3]$ make

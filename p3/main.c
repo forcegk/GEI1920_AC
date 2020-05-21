@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
         }
 
         if(debug){
-            printf("\nMatriz A es...\n");
+            printf("\n--- Matriz A ---\n");
             for(i=0; i<m; i++){
                 for(j=0; j<k; j++){
                     printf("%f ", A[i*k+j]);
@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
                 printf("\n");
             }
 
-            printf("\nMatriz B es...\n");
+            printf("\n--- Matriz B ---\n");
             for(i=0; i<k; i++){
                 for(j=0; j<n; j++){
                     printf("%f ", B[i*n+j]);
@@ -353,22 +353,22 @@ int main(int argc, char *argv[]) {
     #ifdef DEBUG
     for(temp_int = 0; temp_int<numprocs; temp_int++){
         if(rank == temp_int){
-            printf("\n#%d :: SubMatriz A es...\n", temp_int);
+            fprintf(stderr, "\n#%d :: SubMatriz A es...\n", temp_int);
                 for(i=0; i<mpp; i++){
                     for(j=0; j<kpp; j++){
-                        printf("%f ", localA[i*kpp+j]);
+                        fprintf(stderr, "%f ", localA[i*kpp+j]);
                     }
-                    printf("\n");
+                    fprintf(stderr, "\n");
                 }
-                fflush(stdout);
-            printf("\n#%d :: SubMatriz B es...\n", temp_int);
+                fflush(stderr);
+            fprintf(stderr, "\n#%d :: SubMatriz B es...\n", temp_int);
                 for(i=0; i<kpp; i++){
                     for(j=0; j<npp; j++){
-                        printf("%f ", localB[i*npp+j]);
+                        fprintf(stderr, "%f ", localB[i*npp+j]);
                     }
-                    printf("\n");
+                    fprintf(stderr, "\n");
                 }
-                fflush(stdout);
+                fflush(stderr);
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
@@ -409,22 +409,22 @@ int main(int argc, char *argv[]) {
         MPI_Barrier(MPI_COMM_WORLD);
         for(int asdf = 0; asdf<numprocs; asdf++){
             if(rank == asdf){
-                printf("\nIt.%d, #%d :: bufA es...\n", temp_int, asdf);
+                fprintf(stderr, "\nIt.%d, #%d :: bufA es...\n", temp_int, asdf);
                     for(i=0; i<mpp; i++){
                         for(j=0; j<kpp; j++){
-                            printf("%f ", bufA[i*kpp+j]);
+                            fprintf(stderr, "%f ", bufA[i*kpp+j]);
                         }
-                        printf("\n");
+                        fprintf(stderr, "\n");
                     }
-                    fflush(stdout);
-                printf("\nIt.%d, #%d :: bufB es...\n", temp_int, asdf);
+                    fflush(stderr);
+                fprintf(stderr, "\nIt.%d, #%d :: bufB es...\n", temp_int, asdf);
                     for(i=0; i<kpp; i++){
                         for(j=0; j<npp; j++){
-                            printf("%f ", bufB[i*npp+j]);
+                            fprintf(stderr, "%f ", bufB[i*npp+j]);
                         }
-                        printf("\n");
+                        fprintf(stderr, "\n");
                     }
-                    fflush(stdout);
+                    fflush(stderr);
             }
             MPI_Barrier(MPI_COMM_WORLD);
         }
@@ -436,14 +436,14 @@ int main(int argc, char *argv[]) {
     MPI_Barrier(MPI_COMM_WORLD);
     for(int asdf = 0; asdf<numprocs; asdf++){
         if(rank == asdf){
-            printf("\nIt.%d, #%d :: SubMatriz C es...\n", temp_int, asdf);
+            fprintf(stderr, "\nIt.%d, #%d :: SubMatriz C es...\n", temp_int, asdf);
                 for(i=0; i<mpp; i++){
                     for(j=0; j<npp; j++){
-                        printf("%f ", localC[i*npp+j]);
+                        fprintf(stderr, "%f ", localC[i*npp+j]);
                     }
-                    printf("\n");
+                    fprintf(stderr, "\n");
                 }
-                fflush(stdout);
+                fflush(stderr);
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
@@ -472,7 +472,7 @@ int main(int argc, char *argv[]) {
     /*** TEST POST CALCULO ***/
     if(!rank){
         if(debug){
-            printf("\nMatriz C es...\n");
+            printf("\n--- Matriz C ---\n");
             for(i=0; i<m; i++){
                 for(j=0; j<n; j++){
                     printf("%f ", C[i*n+j]);
