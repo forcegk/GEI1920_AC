@@ -324,6 +324,6 @@ Para ahorrar espacio en la memoria, solo imprimimos las matrices A, B y C en el 
     Tiempo de ejecución del proceso #24: 6.745507
 
 ### Conclusión
-Este algoritmo SUMMA es definitivamente requiere menos memoria, y por lo general parece mucho más escalable que el que implementamos en la práctica 2.
+Este algoritmo SUMMA definitivamente requiere menos memoria, y por lo general parece mucho más escalable que el que implementamos en la práctica 2.
 Una cosa que me ha llamado la atención pero tampoco me ha sorprendido es que a medida que aumentamos el número de procesos, el rendimiento disminuye. Me ha sorprendido lo mucho que lo hace.
 Muy probablemente esto se deba a que, siendo mi procesador de 2 núcleos y 4 hilos, al subir el número de procesos por hilo, aumentan los cambios de contexto, y no solo eso sino además el número de fallos caché, que como se puede apreciar afecta muy notablemente al rendimiento. Si podemos sacar alguna conclusión de estos resultados es que no es conveniente pasarse del número de núcleos o hilos de procesado que tenemos en este caso. 
