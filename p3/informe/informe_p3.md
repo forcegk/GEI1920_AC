@@ -46,7 +46,7 @@ Para que se imprima alguna matriz a matrices.txt, debug tiene que valer 1.
 
 ### Parámetros
 | Parámetro | Descripción |
-|:---------:|-------------|
+|-----------|-------------|
 | m         | Valor m de la matriz |
 | k         | Valor k de la matriz |
 | n         | Valor n de la matriz |
@@ -56,6 +56,14 @@ Para que se imprima alguna matriz a matrices.txt, debug tiene que valer 1.
 | time      | Indica si queremos imprimir los tiempos de cada proceso |
 
 ### Alterar el funcionamiento con \#define
+Para cumplir con algunos requisitos, como por ejemplo implementar los comunicadores con MPI_Comm_Split, y con MPI_Cart_sub, ciertos bloques del código son activables o desactivables de forma transparente, para realizar la división de procesos en comunicadores de formas diferentes.
+
+Podemos alterar el funcionamiento de dos apartados importantes de la práctica:
+* Difusión de parámetros
+|   \#define   | Descripción |
+|--------------|-------------|
+| BCAST_PACKED | La difusión de parámetros se realiza mediante una serie de MPI_Pack's en el proceso #0, y se desempaqueta en el resto con los MPI_Unpack's correspondientes |
+| BCAST_STRUCT | La difusión de parámetros se realiza mediante la definición de un tipo struct de MPI, se rellenan los campos de la struct en el proceso #0, se difunden al resto de procesos, donde se asignan los valores de las variables locales a los que trae rellenados la struct |
 
 ### Compilación
     [alonso@anarchy-alonso:AC/p3]$ make
