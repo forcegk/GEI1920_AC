@@ -60,6 +60,7 @@ Para cumplir con algunos requisitos, como por ejemplo implementar los comunicado
 
 Podemos alterar el funcionamiento de dos apartados importantes de la práctica:
 * Difusión de parámetros
+
 |   \#define   | Descripción |
 |--------------|-------------|
 | BCAST_PACKED | La difusión de parámetros se realiza mediante una serie de MPI_Pack's en el proceso #0, y se desempaqueta en el resto con los MPI_Unpack's correspondientes |
