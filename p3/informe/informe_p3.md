@@ -58,7 +58,7 @@ Para que se imprima alguna matriz a matrices.txt, debug tiene que valer 1.
 Cualquier valor menor que 0, o que no sea múltiplo de la raíz cuadrada del número de procesos para m, k, n, hará que el programa aborte forma controlada, mostrará donde se encuentra el fallo, y el correspondiente mensaje de error.
 
 ### Alterar el funcionamiento con \#define
-Para cumplir con algunos requisitos, como por ejemplo implementar los comunicadores con MPI_Comm_Split, y con MPI_Cart_sub, ciertos bloques del código son activables o desactivables de forma transparente, para realizar la división de procesos en comunicadores de formas diferentes.
+Para cumplir con algunos requisitos, como por ejemplo implementar los comunicadores con MPI\_Comm\_Split, y con MPI\_Cart\_sub, ciertos bloques del código son activables o desactivables de forma transparente, para realizar la división de procesos en comunicadores de formas diferentes.
 
 Podemos alterar el funcionamiento de dos apartados importantes de la práctica:
 * Difusión de parámetros
