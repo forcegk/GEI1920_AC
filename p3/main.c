@@ -19,7 +19,7 @@
 #define COMM_SUBTOPO
 //#define COMM_SPLIT
 
-//#define DO_SORT_OUTPUT
+#define DO_SORT_OUTPUT
 
 //#define DEBUG
 
